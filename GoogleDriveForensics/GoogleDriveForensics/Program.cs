@@ -84,6 +84,7 @@ namespace GoogleDriveForensics
                     Console.WriteLine("Last Modifying User Name: " + returnedFile.LastModifyingUserName);
                     Console.WriteLine("Last Viewed By Me Date: " + returnedFile.LastViewedByMeDate);
                     Console.WriteLine("Editable: " + returnedFile.Editable);
+
                     if (returnedFile.ExplicitlyTrashed != null)
                         Console.WriteLine("Explicitly Trashed: " + returnedFile.ExplicitlyTrashed);
                     else
