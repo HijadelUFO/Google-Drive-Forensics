@@ -12,6 +12,8 @@ using Google.Apis.Util.Store;
 using Google.Apis.Logging;
 using Google.Apis.Services;
 using Google.Apis.Upload;
+using System.Net;
+using System.Collections.Generic;
 
 namespace GoogleDriveForensics
 {
@@ -19,7 +21,7 @@ namespace GoogleDriveForensics
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("New Drive API Sample:");
+            Console.WriteLine("Google Drive API Sample:");
             Console.WriteLine("================================");
             try
             {
@@ -44,7 +46,7 @@ namespace GoogleDriveForensics
                 Console.WriteLine("JSON file open.");
                 credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
-                    new[] { DriveService.Scope.Drive },
+                    new[] { DriveService.Scope.DriveReadonly },
                     "user", CancellationToken.None, new FileDataStore("DriveDocuments"));
             }
 
@@ -55,43 +57,14 @@ namespace GoogleDriveForensics
                 ApplicationName = "Drive API Sample",
             });
 
-            await ListFiles(service);
-        }
+            DriveAnalysis driveAna = new DriveAnalysis(credential, service);
+            await driveAna.ListAllFilesAsync();
+            driveAna.DownloadJson();
 
-        private async Task ListFiles(DriveService service)
-        {
-            Console.WriteLine("Listing Files... (Execute ASYNC)");
-            Console.WriteLine("======================================\n");
-
-            var fileLst = await service.Files.List().ExecuteAsync();
-
-            if (fileLst.Items == null)
-            {
-                Console.WriteLine("No file found.");
-            }
-            else
-            {
-                foreach (Google.Apis.Drive.v2.Data.File returnedFile in fileLst.Items)
-                {
-                    Console.WriteLine("File ID: " + returnedFile.Id);
-                    Console.WriteLine("Title: " + returnedFile.Title);
-                    Console.WriteLine("Md5Checksum: " + returnedFile.Md5Checksum);
-                    Console.WriteLine("File Size: " + returnedFile.FileSize);
-                    Console.WriteLine("Original Filename: " + returnedFile.OriginalFilename);
-                    Console.WriteLine("Created Date: " + returnedFile.CreatedDate);
-                    Console.WriteLine("Modified Date: " + returnedFile.ModifiedDate);
-                    Console.WriteLine("Last Modifying User: " + returnedFile.LastModifyingUser.DisplayName);
-                    Console.WriteLine("Last Modifying User Name: " + returnedFile.LastModifyingUserName);
-                    Console.WriteLine("Last Viewed By Me Date: " + returnedFile.LastViewedByMeDate);
-                    Console.WriteLine("Editable: " + returnedFile.Editable);
-
-                    if (returnedFile.ExplicitlyTrashed != null)
-                        Console.WriteLine("Explicitly Trashed: " + returnedFile.ExplicitlyTrashed);
-                    else
-                        Console.WriteLine("Explicitly Trashed: Not trashed");
-                    Console.WriteLine("\n======================================\n");
-                }
-            }
+            Console.WriteLine("Do you want to download all files?");
+            string input = Console.ReadLine();
+            if(input.Contains("yes"))
+                driveAna.DownloadAllFiles();
         }
     }
 }
