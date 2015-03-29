@@ -99,13 +99,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DriveAnalysis.cs" />
+    <Compile Include="BatchProcessor.cs" />
+    <Compile Include="DriveAnalyzer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram.cd" />
     <None Include="client.json" />
     <None Include="packages.config" />
   </ItemGroup>

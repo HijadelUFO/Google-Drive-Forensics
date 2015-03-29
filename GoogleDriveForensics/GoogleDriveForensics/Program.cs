@@ -57,14 +57,18 @@ namespace GoogleDriveForensics
                 ApplicationName = "Drive API Sample",
             });
 
-            DriveAnalysis driveAna = new DriveAnalysis(credential, service);
-            await driveAna.ListAllFilesAsync();
-            driveAna.DownloadJson();
+            DriveAnalyzer driveAnalyzer = new DriveAnalyzer(service);
+
+            await driveAnalyzer.ListAllFilesAsync();
+            Console.WriteLine();
+
+            await driveAnalyzer.DownloadAllJsonAsync();
 
             Console.WriteLine("Do you want to download all files?");
             string input = Console.ReadLine();
+            Console.WriteLine();
             if(input.Contains("yes"))
-                driveAna.DownloadAllFiles();
+                await driveAnalyzer.DownloadAllFilesAsync();
         }
     }
 }
