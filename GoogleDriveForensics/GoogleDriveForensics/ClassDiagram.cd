@@ -1,24 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1">
-  <Class Name="GoogleDriveForensics.DriveAnalyzer" Collapsed="true">
-    <Position X="2.25" Y="1.25" Width="1.5" />
-    <AssociationLine Name="BatchProcess" Type="GoogleDriveForensics.BatchProcessor">
-      <MemberNameLabel ManuallyPlaced="true" ManuallySized="true">
-        <Position X="0.618" Y="0.343" Height="0.182" Width="1.152" />
-      </MemberNameLabel>
-    </AssociationLine>
+  <Class Name="GoogleDriveForensics.DriveAnalyzer">
+    <Position X="2.25" Y="1.25" Width="2" />
     <TypeIdentifier>
-      <HashCode>CgAAAAAAAAAAAQAAAAQAAAAAAAAAAAAAACBAAAQAAEA=</HashCode>
+      <HashCode>AAAAAAAAACAAAQAAIAQAAAAAAAAEAAAAAAAIAAQAAAA=</HashCode>
       <FileName>DriveAnalyzer.cs</FileName>
     </TypeIdentifier>
-    <ShowAsAssociation>
-      <Property Name="BatchProcess" />
-    </ShowAsAssociation>
   </Class>
   <Class Name="GoogleDriveForensics.BatchProcessor">
     <Position X="6" Y="1.75" Width="1.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <HashCode>AAAAEQAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
       <FileName>BatchProcessor.cs</FileName>
     </TypeIdentifier>
   </Class>

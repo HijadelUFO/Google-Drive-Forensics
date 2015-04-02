@@ -21,7 +21,7 @@ namespace GoogleDriveForensics
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Google Drive API Sample:");
+            Console.WriteLine("Google Drive Forensics:");
             Console.WriteLine("================================");
             try
             {
@@ -38,26 +38,8 @@ namespace GoogleDriveForensics
 
         private async Task Run()
         {
-            UserCredential credential;
-
-            using (var stream = new System.IO.FileStream("client.json",
-                System.IO.FileMode.Open, System.IO.FileAccess.Read))
-            {
-                Console.WriteLine("JSON file open.");
-                credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                    GoogleClientSecrets.Load(stream).Secrets,
-                    new[] { DriveService.Scope.DriveReadonly },
-                    "user", CancellationToken.None, new FileDataStore("DriveDocuments"));
-            }
-
-            // Create the service.
-            var service = new DriveService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Drive API Sample",
-            });
-
-            DriveAnalyzer driveAnalyzer = new DriveAnalyzer(service);
+            DriveAnalyzer driveAnalyzer = await DriveAnalyzer.CreateDriveAnalyzerAysnc();
+            Console.WriteLine("Authorization completed.");
 
             await driveAnalyzer.ListAllFilesAsync();
             Console.WriteLine();
@@ -69,6 +51,12 @@ namespace GoogleDriveForensics
             Console.WriteLine();
             if(input.Contains("yes"))
                 await driveAnalyzer.DownloadAllFilesAsync();
+
+            Console.WriteLine("Do you want to clear tokens?");
+            input = Console.ReadLine();
+            Console.WriteLine();
+            if (input.Contains("yes"))
+                await driveAnalyzer.Authorizer.ClearCredential();
         }
     }
 }

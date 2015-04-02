@@ -14,17 +14,42 @@ namespace GoogleDriveForensics
 {
     public class DriveAnalyzer
     {
-        public DriveAnalyzer(DriveService serv)
+        private DriveService driveService;
+
+        //GoogleAuthorizer is used to complete authentication and authorization
+        private GoogleAuthorizer authorizer;
+        public GoogleAuthorizer Authorizer { get { return authorizer; } }
+
+        //Google RESTful API base uri
+        private const string BASE_URI = "https://www.googleapis.com/drive/v2/files/";
+        //Folder to store downloaded files
+        private const string folderPath = @"F:\Digital Forensics\Thesis\Result\Record";
+
+        
+        //Use factory pattern to build and initialize object.
+        //Because async method can not be used in constructor.
+        private DriveAnalyzer() { }
+
+        private async Task<DriveAnalyzer> InitializeAsync()
         {
-            driveService = serv;
+            authorizer = new GoogleAuthorizer();
+            driveService = await authorizer.AuthorizeAndGetDriveService();
+            return this;
         }
+
+        public static async Task<DriveAnalyzer>  CreateDriveAnalyzerAysnc()
+        {
+            DriveAnalyzer analyzer = new DriveAnalyzer();
+            return await analyzer.InitializeAsync();
+        }
+
 
         //Write important metadata of all files to a txt file.
         public async Task ListAllFilesAsync()
         {
             Console.WriteLine("Listing Files...");
 
-            using (var stream = System.IO.File.Create(@"F:\Digital Forensics\Thesis\Result\Record\result.txt")) { }
+            using (var stream = System.IO.File.Create(Path.Combine(folderPath, "result.txt"))) { }
 
             BatchProcessor batch = new BatchProcessor(driveService);
             await batch.BatchListOnlyAsync(file => ListFileMetadata(file));
@@ -51,7 +76,7 @@ namespace GoogleDriveForensics
 
         private void ListFileMetadata(Google.Apis.Drive.v2.Data.File returnedFile)
         {
-            using (StreamWriter writer = System.IO.File.AppendText(@"F:\Digital Forensics\Thesis\Result\Record\result.txt"))
+            using (StreamWriter writer = System.IO.File.AppendText(Path.Combine(folderPath, "result.txt")))
             {
                 writer.WriteLine("File ID: " + returnedFile.Id);
                 writer.WriteLine("Title: " + returnedFile.Title);
@@ -94,9 +119,14 @@ namespace GoogleDriveForensics
 
                 using (Stream jsonStream = await fileJsonStream)
                 {
+                    //Folder path to download JSON files
+                    string jsonFolderPath = Path.Combine(folderPath, "JSON");
+                    if (!Directory.Exists(jsonFolderPath))
+                        Directory.CreateDirectory(jsonFolderPath);
+
                     //Write response stream to file
-                    using (FileStream output = System.IO.File.Open(@"F:\Digital Forensics\Thesis\Result\Record\JSON\"
-                        + returnedFile.Title + ".json", FileMode.Create))
+                    using (FileStream output = System.IO.File.Open(
+                        Path.Combine(jsonFolderPath, returnedFile.Title + ".json"), FileMode.Create))
                     {
                         Task writeFile = jsonStream.CopyToAsync(output);
                         Console.WriteLine("Writing JSON file of {0}...", returnedFile.Title);
@@ -135,7 +165,7 @@ namespace GoogleDriveForensics
 
                 using (Stream fileStream = await fileJsonStream)
                 {
-                    string fileName = @"F:\Digital Forensics\Thesis\Result\Record\" + returnedFile.Title;
+                    string fileName = Path.Combine(folderPath, returnedFile.Title);
 
                     //Write response stream to file
                     using (FileStream output = System.IO.File.Open(fileName, FileMode.Create))
@@ -153,10 +183,5 @@ namespace GoogleDriveForensics
                 Console.WriteLine("Error while downloading JSON file: " + e.Message);
             }
         }
-
-        private DriveService driveService;
-
-        //RESTful base uri
-        private const string BASE_URI = "https://www.googleapis.com/drive/v2/files/";
     }
 }
