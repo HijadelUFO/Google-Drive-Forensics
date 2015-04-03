@@ -1,187 +1,173 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Drive.v2;
-using Google.Apis.Drive.v2.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace GoogleDriveForensics
 {
-    public class DriveAnalyzer
+    class DriveAnalyzer
     {
-        private DriveService driveService;
-
-        //GoogleAuthorizer is used to complete authentication and authorization
-        private GoogleAuthorizer authorizer;
-        public GoogleAuthorizer Authorizer { get { return authorizer; } }
-
-        //Google RESTful API base uri
-        private const string BASE_URI = "https://www.googleapis.com/drive/v2/files/";
         //Folder to store downloaded files
-        private const string folderPath = @"F:\Digital Forensics\Thesis\Result\Record";
+        private string FOLDER_PATH = @"F:\Digital Forensics\Thesis\Result\Record";
 
-        
-        //Use factory pattern to build and initialize object.
-        //Because async method can not be used in constructor.
+        private DriveScanner driveScanner;
+
+        //Empty default constructor
         private DriveAnalyzer() { }
 
+        //Use factory pattern to build and initialize object.
+        //Because async method can not be used in constructor.
         private async Task<DriveAnalyzer> InitializeAsync()
         {
-            authorizer = new GoogleAuthorizer();
-            driveService = await authorizer.AuthorizeAndGetDriveService();
+            driveScanner = await DriveScanner.CreateDriveScannerAysnc();
             return this;
         }
 
-        public static async Task<DriveAnalyzer>  CreateDriveAnalyzerAysnc()
+        //Static method to create and return DriveAnalyzer object
+        public static async Task<DriveAnalyzer> CreateDriveAnalyzer()
         {
             DriveAnalyzer analyzer = new DriveAnalyzer();
+            Console.WriteLine("Authorization completed.");
+            Console.WriteLine();
+
             return await analyzer.InitializeAsync();
         }
 
+
+        public async Task ClearTokens()
+        {
+            await driveScanner.Authorizer.ClearCredential();
+        }
 
         //Write important metadata of all files to a txt file.
         public async Task ListAllFilesAsync()
         {
             Console.WriteLine("Listing Files...");
 
-            using (var stream = System.IO.File.Create(Path.Combine(folderPath, "result.txt"))) { }
+            using (var stream = System.IO.File.Create(Path.Combine(FOLDER_PATH, "result.txt"))) { }
 
-            BatchProcessor batch = new BatchProcessor(driveService);
-            await batch.BatchListOnlyAsync(file => ListFileMetadata(file));
+            await driveScanner.BatchListOnlyAsync(file => ListFileMetadata(file));
         }
 
-        //Download all JSON files as metadata record
-        public async Task DownloadAllJsonAsync()
+        private void ListFileMetadata(Google.Apis.Drive.v2.Data.File fileEntry)
         {
-            BatchProcessor batch = new BatchProcessor(driveService);
-
-            //Use Lambda expression
-            await batch.BatchProcessAsync(file => DownloadJsonAsync(file));
-        }
-
-        //Download all files with content
-        public async Task DownloadAllFilesAsync()
-        {
-            BatchProcessor batch = new BatchProcessor(driveService);
-
-            Console.WriteLine("Start downloading...");
-            Console.WriteLine();
-            await batch.BatchProcessAsync(file => DownloadFileAsync(file));
-        }
-
-        private void ListFileMetadata(Google.Apis.Drive.v2.Data.File returnedFile)
-        {
-            using (StreamWriter writer = System.IO.File.AppendText(Path.Combine(folderPath, "result.txt")))
+            using (StreamWriter writer = System.IO.File.AppendText(Path.Combine(FOLDER_PATH, "result.txt")))
             {
-                writer.WriteLine("File ID: " + returnedFile.Id);
-                writer.WriteLine("Title: " + returnedFile.Title);
-                writer.WriteLine("Original Filename: " + returnedFile.OriginalFilename);
-                writer.WriteLine("Md5Checksum: " + returnedFile.Md5Checksum);
-                writer.WriteLine("File Size: " + returnedFile.FileSize);
-                writer.WriteLine("MIME type: " + returnedFile.MimeType);
-                writer.WriteLine("Created Date: " + returnedFile.CreatedDate);
-                writer.WriteLine("Modified Date: " + returnedFile.ModifiedDate);
-                writer.WriteLine("Last Modifying User: " + returnedFile.LastModifyingUser.DisplayName);
-                writer.WriteLine("Last Viewed By Me Date: " + returnedFile.LastViewedByMeDate);
+                writer.WriteLine("File ID: " + fileEntry.Id);
+                writer.WriteLine("Title: " + fileEntry.Title);
+                writer.WriteLine("Original Filename: " + fileEntry.OriginalFilename);
+                writer.WriteLine("Md5Checksum: " + fileEntry.Md5Checksum);
+                writer.WriteLine("File Size: " + fileEntry.FileSize);
+                writer.WriteLine("MIME type: " + fileEntry.MimeType);
+                writer.WriteLine("Created Date: " + fileEntry.CreatedDate);
+                writer.WriteLine("Modified Date: " + fileEntry.ModifiedDate);
+                writer.WriteLine("Last Modifying User: " + fileEntry.LastModifyingUser.DisplayName);
+                writer.WriteLine("Last Viewed By Me Date: " + fileEntry.LastViewedByMeDate);
 
                 writer.Write(writer.NewLine);
-                writer.WriteLine("Shared: " + returnedFile.Shared);
-                if (returnedFile.SharingUser != null)
-                    writer.WriteLine("Sharing User: " + returnedFile.SharingUser.DisplayName);
-                writer.WriteLine("Last modified by me: " + returnedFile.ModifiedByMeDate);
-                writer.WriteLine("Download URL: " + returnedFile.DownloadUrl);
+                writer.WriteLine("Shared: " + fileEntry.Shared);
+                if (fileEntry.SharingUser != null)
+                    writer.WriteLine("Sharing User: " + fileEntry.SharingUser.DisplayName);
+                writer.WriteLine("Last modified by me: " + fileEntry.ModifiedByMeDate);
+                writer.WriteLine("Download URL: " + fileEntry.DownloadUrl);
 
-                writer.WriteLine("Explicitly Trashed: " + returnedFile.ExplicitlyTrashed);
+                writer.WriteLine("Explicitly Trashed: " + fileEntry.ExplicitlyTrashed);
 
                 writer.Write(writer.NewLine);
                 writer.WriteLine("======================================");
                 writer.Write(writer.NewLine);
 
-                Console.WriteLine(returnedFile.Title + " recorded.");
+                Console.WriteLine(fileEntry.Title + " recorded.");
             }
         }
 
-        private async Task DownloadJsonAsync(Google.Apis.Drive.v2.Data.File returnedFile)
-        {
-            //Generate URI to file resource
-            Uri fileUri = new Uri(BASE_URI + returnedFile.Id);
 
+        //Download metadata of a file via file entry ID
+        public async Task DownloadMetadataAsync(string fileId)
+        {
+            Google.Apis.Drive.v2.Data.File file = await driveScanner.getFileEntryAsync(fileId);
+
+            await DownloadMetadataAsync(file);
+        }
+
+        //Download content of a file via file entry ID
+        public async Task DownloadContentAsync(string fileId)
+        {
+            Google.Apis.Drive.v2.Data.File file = await driveScanner.getFileEntryAsync(fileId);
+
+            await DownloadContentAsync(file);
+        }
+
+        //Download metadata of a file via file entry
+        public async Task DownloadMetadataAsync(Google.Apis.Drive.v2.Data.File fileEntry)
+        {
             try
             {
                 //Use HTTP client in DriveService to obtain response
-                Task<Stream> fileJsonStream = driveService.HttpClient.GetStreamAsync(fileUri);
-                Console.WriteLine("Downloading JSON file of {0}...", returnedFile.Title);
+                Task<Stream> fileJsonStreamTask = driveScanner.GetMetaDataStreamAsync(fileEntry);
 
-                using (Stream jsonStream = await fileJsonStream)
+                using(Stream jsonStream = await fileJsonStreamTask)
                 {
-                    //Folder path to download JSON files
-                    string jsonFolderPath = Path.Combine(folderPath, "JSON");
-                    if (!Directory.Exists(jsonFolderPath))
-                        Directory.CreateDirectory(jsonFolderPath);
-
-                    //Write response stream to file
-                    using (FileStream output = System.IO.File.Open(
-                        Path.Combine(jsonFolderPath, returnedFile.Title + ".json"), FileMode.Create))
-                    {
-                        Task writeFile = jsonStream.CopyToAsync(output);
-                        Console.WriteLine("Writing JSON file of {0}...", returnedFile.Title);
-                        await writeFile;
-                        Console.WriteLine(returnedFile.Title + ".json has been written to disk.");
-                    }
-                    Console.WriteLine();
+                    if (jsonStream != null)
+                        await WriteStreamToFile(jsonStream,
+                            Path.Combine(FOLDER_PATH, "Metadata"), fileEntry.Title + ".json");
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error while downloading JSON file: " + e.Message);
+                Console.WriteLine("Error while writing JSON file: " + e.Message);
             }
         }
 
-        private async Task DownloadFileAsync(Google.Apis.Drive.v2.Data.File returnedFile)
+        //Download content of a file via file entry
+        public async Task DownloadContentAsync(Google.Apis.Drive.v2.Data.File fileEntry)
         {
-            //Not every file resources in Google Drive has file content.
-            //For example, a folder
-            if (returnedFile.FileSize == null)
-            {
-                Console.WriteLine(returnedFile.Title + " is not a file. Skipped.");
-                Console.WriteLine();
-                return;
-            }
-
-            //Generate URI to file resource
-            //"alt=media" indicates downloading file content instead of JSON metadata
-            Uri fileUri = new Uri(BASE_URI + returnedFile.Id + "?alt=media");
-
             try
             {
                 //Use HTTP client in DriveService to obtain response
-                Task<Stream> fileJsonStream = driveService.HttpClient.GetStreamAsync(fileUri);
-                Console.WriteLine("Downloading file {0}...", returnedFile.Title);
+                Task<Stream> fileContentStreamTask = driveScanner.GetContentStreamAsync(fileEntry);
 
-                using (Stream fileStream = await fileJsonStream)
+                using (Stream contentStream = await fileContentStreamTask)
                 {
-                    string fileName = Path.Combine(folderPath, returnedFile.Title);
-
-                    //Write response stream to file
-                    using (FileStream output = System.IO.File.Open(fileName, FileMode.Create))
-                    {
-                        Task writeFile = fileStream.CopyToAsync(output);
-                        Console.WriteLine("-----Writing file {0}...", returnedFile.Title);
-                        await writeFile;
-                        Console.WriteLine("-----" + returnedFile.Title + " has been written to disk.");
-                    }
-                    Console.WriteLine();
+                    if (contentStream != null)
+                        await WriteStreamToFile(contentStream,
+                            Path.Combine(FOLDER_PATH, "Content"), fileEntry.Title);
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error while downloading JSON file: " + e.Message);
+                Console.WriteLine("Error while writing file: " + e.Message);
             }
+        }
+
+        //Download all JSON files as metadata record
+        public async Task DownloadAllMetadataAsync()
+        {
+            await driveScanner.BatchProcessAsync(file => DownloadMetadataAsync(file));
+        }
+
+        //Download all file contents
+        public async Task DownloadAllContentsAsync()
+        {
+            await driveScanner.BatchProcessAsync(file => DownloadContentAsync(file));
+        }
+
+        private async Task WriteStreamToFile(Stream stream, string folderPath, string filename)
+        {
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            //Write response stream to file
+            using (FileStream output = System.IO.File.Open(Path.Combine(folderPath, filename), FileMode.Create))
+            {
+                Task writeFile = stream.CopyToAsync(output);
+                Console.WriteLine("-----Writing {0}...", filename);
+                await writeFile;
+                Console.WriteLine("-----" + filename + " has been written to disk.");
+            }
+            Console.WriteLine();
         }
     }
 }

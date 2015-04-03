@@ -38,25 +38,25 @@ namespace GoogleDriveForensics
 
         private async Task Run()
         {
-            DriveAnalyzer driveAnalyzer = await DriveAnalyzer.CreateDriveAnalyzerAysnc();
-            Console.WriteLine("Authorization completed.");
+
+            DriveAnalyzer driveAnalyzer = await DriveAnalyzer.CreateDriveAnalyzer();
 
             await driveAnalyzer.ListAllFilesAsync();
             Console.WriteLine();
 
-            await driveAnalyzer.DownloadAllJsonAsync();
+            await driveAnalyzer.DownloadAllMetadataAsync();
 
             Console.WriteLine("Do you want to download all files?");
             string input = Console.ReadLine();
             Console.WriteLine();
-            if(input.Contains("yes"))
-                await driveAnalyzer.DownloadAllFilesAsync();
+            if (input.Contains("yes"))
+                await driveAnalyzer.DownloadAllContentsAsync();
 
             Console.WriteLine("Do you want to clear tokens?");
             input = Console.ReadLine();
             Console.WriteLine();
             if (input.Contains("yes"))
-                await driveAnalyzer.Authorizer.ClearCredential();
+                await driveAnalyzer.ClearTokens();
         }
     }
 }
