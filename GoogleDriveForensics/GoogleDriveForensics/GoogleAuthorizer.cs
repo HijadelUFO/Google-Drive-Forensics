@@ -29,7 +29,6 @@ namespace GoogleDriveForensics
             using (var stream = new System.IO.FileStream("client.json",
                 System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
-                Console.WriteLine("JSON file open.");
                 credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
                     new[] { DriveService.Scope.DriveReadonly },
@@ -42,6 +41,9 @@ namespace GoogleDriveForensics
                 HttpClientInitializer = credential,
                 ApplicationName = "Google Drive Forensics",
             });
+
+            Console.WriteLine("Google Drvie connected.");
+            Console.WriteLine();
 
             return service;
         }

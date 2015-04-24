@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Google.Apis.Drive.v2.Data;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,51 +8,30 @@ using System.Threading.Tasks;
 
 namespace GoogleDriveForensics
 {
-    class DriveAnalyzer
+    public class DriveDownloader
     {
         //Folder to store downloaded files
-        private string FOLDER_PATH = @"F:\Digital Forensics\Thesis\Result\Record";
+        private string FOLDER_PATH;
 
         private DriveScanner driveScanner;
 
         //Empty default constructor
-        private DriveAnalyzer() { }
-
-        //Use factory pattern to build and initialize object.
-        //Because async method can not be used in constructor.
-        private async Task<DriveAnalyzer> InitializeAsync()
+        public DriveDownloader(DriveScanner scanner)
         {
-            driveScanner = await DriveScanner.CreateDriveScannerAysnc();
-            return this;
+            driveScanner = scanner;
+            FOLDER_PATH = scanner.FOLDER_PATH;
         }
 
-        //Static method to create and return DriveAnalyzer object
-        public static async Task<DriveAnalyzer> CreateDriveAnalyzer()
-        {
-            DriveAnalyzer analyzer = new DriveAnalyzer();
-            Console.WriteLine("Authorization completed.");
-            Console.WriteLine();
-
-            return await analyzer.InitializeAsync();
-        }
-
-
-        public async Task ClearTokens()
-        {
-            await driveScanner.Authorizer.ClearCredential();
-        }
 
         //Write important metadata of all files to a txt file.
-        public async Task ListAllFilesAsync()
+        public async Task DownloadSummaryAsync()
         {
-            Console.WriteLine("Listing Files...");
-
             using (var stream = System.IO.File.Create(Path.Combine(FOLDER_PATH, "result.txt"))) { }
 
-            await driveScanner.BatchListOnlyAsync(file => ListFileMetadata(file));
+            await driveScanner.BatchListOnlyAsync(file => WriteFileToSummary(file));
         }
-
-        private void ListFileMetadata(Google.Apis.Drive.v2.Data.File fileEntry)
+        //List important metadata of a single file
+        private void WriteFileToSummary(Google.Apis.Drive.v2.Data.File fileEntry)
         {
             using (StreamWriter writer = System.IO.File.AppendText(Path.Combine(FOLDER_PATH, "result.txt")))
             {
@@ -82,6 +62,7 @@ namespace GoogleDriveForensics
                 Console.WriteLine(fileEntry.Title + " recorded.");
             }
         }
+
 
 
         //Download metadata of a file via file entry ID
@@ -139,6 +120,50 @@ namespace GoogleDriveForensics
             catch (Exception e)
             {
                 Console.WriteLine("Error while writing file: " + e.Message);
+            }
+        }
+
+        //public async Task listAllRevisionsAsync()
+        //{
+        //    await driveScanner.BatchProcessAsync(file => printRevisionCountAsync(file));
+        //}
+
+        //Download revisions of a particular file
+        public async Task downloadAllRevisions(string fileId)
+        {
+            Google.Apis.Drive.v2.Data.File file = await driveScanner.getFileEntryAsync(fileId);
+
+            await downloadAllRevisions(file);
+        }
+        public async Task downloadAllRevisions(Google.Apis.Drive.v2.Data.File fileEntry)
+        {
+            if (fileEntry.MimeType == "application/vnd.google-apps.folder")
+                return;
+
+            string fileID = fileEntry.Id;
+            IList<Revision> revisions = await driveScanner.getRevisionsAsync(fileID);
+
+            foreach(var version in revisions)
+            {
+                string revID = version.Id;
+
+                try
+                {
+                    Task<Stream> fileRevisionStream = driveScanner.GetRevisionStreamAsync(fileID, revID);
+
+                    using(Stream revisionStream = await fileRevisionStream)
+                    {
+                        if(revisionStream!=null)
+                        {
+                            await WriteStreamToFile(revisionStream, 
+                                Path.Combine(FOLDER_PATH, "Revisions"), fileEntry.Title + " - " + revID + ".json");
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("Error while downloading revisions: " + e.Message);
+                }
             }
         }
 

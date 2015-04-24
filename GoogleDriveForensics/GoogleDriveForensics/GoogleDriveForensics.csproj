@@ -99,11 +99,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DriveAnalyzer.cs" />
+    <Compile Include="DriveDownloader.cs" />
     <Compile Include="DriveScanner.cs" />
     <Compile Include="GoogleAuthorizer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RevisionViewModel.cs" />
+    <Compile Include="versionCollector.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
