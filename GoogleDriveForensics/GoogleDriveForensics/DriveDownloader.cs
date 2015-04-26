@@ -28,7 +28,7 @@ namespace GoogleDriveForensics
         {
             using (var stream = System.IO.File.Create(Path.Combine(FOLDER_PATH, "result.txt"))) { }
 
-            await driveScanner.BatchListOnlyAsync(file => WriteFileToSummary(file));
+            await driveScanner.ParrallelProcessAsync(file => WriteFileToSummary(file));
         }
         //List important metadata of a single file
         private void WriteFileToSummary(Google.Apis.Drive.v2.Data.File fileEntry)
@@ -72,15 +72,6 @@ namespace GoogleDriveForensics
 
             await DownloadMetadataAsync(file);
         }
-
-        //Download content of a file via file entry ID
-        public async Task DownloadContentAsync(string fileId)
-        {
-            Google.Apis.Drive.v2.Data.File file = await driveScanner.getFileEntryAsync(fileId);
-
-            await DownloadContentAsync(file);
-        }
-
         //Download metadata of a file via file entry
         public async Task DownloadMetadataAsync(Google.Apis.Drive.v2.Data.File fileEntry)
         {
@@ -89,7 +80,7 @@ namespace GoogleDriveForensics
                 //Use HTTP client in DriveService to obtain response
                 Task<Stream> fileJsonStreamTask = driveScanner.GetMetaDataStreamAsync(fileEntry);
 
-                using(Stream jsonStream = await fileJsonStreamTask)
+                using (Stream jsonStream = await fileJsonStreamTask)
                 {
                     if (jsonStream != null)
                         await WriteStreamToFile(jsonStream,
@@ -101,7 +92,20 @@ namespace GoogleDriveForensics
                 Console.WriteLine("Error while writing JSON file: " + e.Message);
             }
         }
+        //Download all JSON files as metadata record
+        public async Task DownloadAllMetadataAsync()
+        {
+            await driveScanner.BlockingProcessAsync(file => DownloadMetadataAsync(file));
+        }
 
+
+        //Download content of a file via file entry ID
+        public async Task DownloadContentAsync(string fileId)
+        {
+            Google.Apis.Drive.v2.Data.File file = await driveScanner.getFileEntryAsync(fileId);
+
+            await DownloadContentAsync(file);
+        }
         //Download content of a file via file entry
         public async Task DownloadContentAsync(Google.Apis.Drive.v2.Data.File fileEntry)
         {
@@ -122,11 +126,13 @@ namespace GoogleDriveForensics
                 Console.WriteLine("Error while writing file: " + e.Message);
             }
         }
+        //Download all file contents
+        public async Task DownloadAllContentsAsync()
+        {
+            await driveScanner.BlockingProcessAsync(file => DownloadContentAsync(file));
+        }
 
-        //public async Task listAllRevisionsAsync()
-        //{
-        //    await driveScanner.BatchProcessAsync(file => printRevisionCountAsync(file));
-        //}
+
 
         //Download revisions of a particular file
         public async Task downloadAllRevisions(string fileId)
@@ -135,6 +141,7 @@ namespace GoogleDriveForensics
 
             await downloadAllRevisions(file);
         }
+        //Download revisions of a particular file
         public async Task downloadAllRevisions(Google.Apis.Drive.v2.Data.File fileEntry)
         {
             if (fileEntry.MimeType == "application/vnd.google-apps.folder")
@@ -167,17 +174,6 @@ namespace GoogleDriveForensics
             }
         }
 
-        //Download all JSON files as metadata record
-        public async Task DownloadAllMetadataAsync()
-        {
-            await driveScanner.BatchProcessAsync(file => DownloadMetadataAsync(file));
-        }
-
-        //Download all file contents
-        public async Task DownloadAllContentsAsync()
-        {
-            await driveScanner.BatchProcessAsync(file => DownloadContentAsync(file));
-        }
 
         private async Task WriteStreamToFile(Stream stream, string folderPath, string filename)
         {

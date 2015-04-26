@@ -79,18 +79,13 @@ namespace GoogleDriveForensics
                 Console.WriteLine("{0}. {1}", count++, entry.Title);
             }
         }
-        //Get entry list
-        public async Task<IList<Google.Apis.Drive.v2.Data.File>> getEntriesAsync()
-        {
-            FileList fileList = await getFileListAsync();
-            return fileList.Items;
-        }
 
         //Get File resource via file ID
         public async Task<Google.Apis.Drive.v2.Data.File> getFileEntryAsync(string fileId)
         {
             return await driveService.Files.Get(fileId).ExecuteAsync();
         }
+
 
         //Download metadata of a file as stream
         public async Task<Stream> GetMetaDataStreamAsync(Google.Apis.Drive.v2.Data.File fileEntry)
@@ -112,7 +107,6 @@ namespace GoogleDriveForensics
                 return null;
             }
         }
-
         //Download content of a file as stream
         public async Task<Stream> GetContentStreamAsync(Google.Apis.Drive.v2.Data.File fileEntry)
         {
@@ -152,11 +146,11 @@ namespace GoogleDriveForensics
             var revisionList = await driveService.Revisions.List(fileID).ExecuteAsync();
             return revisionList.Items;
         }
-        //Print the number of revisions of a particular file
+        //Print the number of each file's revisions
         public async Task<List<RevisionViewModel>> listRevisionsAsync()
         {
             List<RevisionViewModel> revisionsList = new List<RevisionViewModel>();
-            var entryList = await getEntriesAsync();
+            var entryList = (await getFileListAsync()).Items;
             foreach(var entry in entryList)
             {
                 int count = (await getRevisionsAsync(entry.Id)).Count;
@@ -164,7 +158,7 @@ namespace GoogleDriveForensics
             }
             return revisionsList;
         }
-
+        //Download a revision as stream
         public async Task<Stream> GetRevisionStreamAsync(string fileID, string revisionID)
         {
             Uri revisionUrl = new Uri(BASE_URI + fileID + "/revisions/" + revisionID);
@@ -187,7 +181,7 @@ namespace GoogleDriveForensics
 
 
         //Used when delegate is an async method
-        public async Task BatchProcessAsync(ProcessFileAsync process)
+        public async Task BlockingProcessAsync(ProcessFileAsync process)
         {
             var fileList = await driveService.Files.List().ExecuteAsync();
 
@@ -205,7 +199,7 @@ namespace GoogleDriveForensics
             }
         }
         //Used when delegate is a blocking method
-        public async Task BatchListOnlyAsync(ProcessFile process)
+        public async Task ParrallelProcessAsync(ProcessFile process)
         {
             var fileList = await driveService.Files.List().ExecuteAsync();
 
@@ -222,6 +216,8 @@ namespace GoogleDriveForensics
                 process(fileResource);
             }
         }
+
+
 
         //Delete stored token
         public async Task ClearTokens()
