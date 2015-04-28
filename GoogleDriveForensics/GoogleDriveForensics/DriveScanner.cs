@@ -83,7 +83,14 @@ namespace GoogleDriveForensics
         //Get File resource via file ID
         public async Task<Google.Apis.Drive.v2.Data.File> getFileEntryAsync(string fileId)
         {
-            return await driveService.Files.Get(fileId).ExecuteAsync();
+            try
+            {
+                return await driveService.Files.Get(fileId).ExecuteAsync();
+            }
+            catch (Exception e)
+            {
+                throw new FileNotFoundException();
+            }
         }
 
 
@@ -107,6 +114,9 @@ namespace GoogleDriveForensics
                 return null;
             }
         }
+
+
+
         //Download content of a file as stream
         public async Task<Stream> GetContentStreamAsync(Google.Apis.Drive.v2.Data.File fileEntry)
         {
@@ -181,7 +191,7 @@ namespace GoogleDriveForensics
 
 
         //Used when delegate is an async method
-        public async Task BlockingProcessAsync(ProcessFileAsync process)
+        public async Task ParrallelProcessAsync(ProcessFileAsync process)
         {
             var fileList = await driveService.Files.List().ExecuteAsync();
 
@@ -199,7 +209,7 @@ namespace GoogleDriveForensics
             }
         }
         //Used when delegate is a blocking method
-        public async Task ParrallelProcessAsync(ProcessFile process)
+        public async Task BlockingProcessAsync(ProcessFile process)
         {
             var fileList = await driveService.Files.List().ExecuteAsync();
 

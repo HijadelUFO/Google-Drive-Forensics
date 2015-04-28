@@ -28,7 +28,7 @@ namespace GoogleDriveForensics
         {
             using (var stream = System.IO.File.Create(Path.Combine(FOLDER_PATH, "result.txt"))) { }
 
-            await driveScanner.ParrallelProcessAsync(file => WriteFileToSummary(file));
+            await driveScanner.BlockingProcessAsync(file => WriteFileToSummary(file));
         }
         //List important metadata of a single file
         private void WriteFileToSummary(Google.Apis.Drive.v2.Data.File fileEntry)
@@ -95,7 +95,7 @@ namespace GoogleDriveForensics
         //Download all JSON files as metadata record
         public async Task DownloadAllMetadataAsync()
         {
-            await driveScanner.BlockingProcessAsync(file => DownloadMetadataAsync(file));
+            await driveScanner.ParrallelProcessAsync(file => DownloadMetadataAsync(file));
         }
 
 
@@ -129,7 +129,7 @@ namespace GoogleDriveForensics
         //Download all file contents
         public async Task DownloadAllContentsAsync()
         {
-            await driveScanner.BlockingProcessAsync(file => DownloadContentAsync(file));
+            await driveScanner.ParrallelProcessAsync(file => DownloadContentAsync(file));
         }
 
 

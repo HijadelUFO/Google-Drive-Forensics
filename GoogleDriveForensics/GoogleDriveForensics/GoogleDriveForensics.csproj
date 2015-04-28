@@ -101,6 +101,7 @@
   <ItemGroup>
     <Compile Include="DriveDownloader.cs" />
     <Compile Include="DriveScanner.cs" />
+    <Compile Include="FileNotFoundException.cs" />
     <Compile Include="GoogleAuthorizer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
