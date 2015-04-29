@@ -101,7 +101,16 @@ namespace GoogleDriveForensics
                                     Console.WriteLine("Please enter a correct number.");
                             }
                             if (num == -1) break;
-                            await scanner.Donwloader.downloadAllRevisions(entryRevisionList[num - 1].EntryID);
+                            try
+                            {
+                                await scanner.Donwloader.downloadAllRevisions(entryRevisionList[num - 1].EntryID);
+                            }
+                            catch (FileNotFoundException ex)
+                            {
+                                Console.WriteLine("Requested file not found:" + ex.Message);
+                                Console.WriteLine();
+                                continue;
+                            }
                         }
                         break;
                     case "q":
